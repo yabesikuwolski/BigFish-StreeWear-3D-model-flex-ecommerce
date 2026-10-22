@@ -1,16 +1,13 @@
-# React + Vite
+# BIGFISH storefront
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+## WhatsApp enquiries
 
-Currently, two official plugins are available:
+Set `VITE_WHATSAPP_NUMBER` to the shop's WhatsApp destination in international format using digits only (country code included, without a leading `+`). For local development, put it in `.env.local`. For a production build, set the same variable in the deployment environment before building. `.env.local` is ignored by Git.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+If the variable is unset, product enquiry actions explain that WhatsApp is unavailable and direct customers to the Contact page email. The Contact page also displays an unavailable state instead of a broken WhatsApp link.
 
-## React Compiler
+The destination is not printed in the storefront interface. WhatsApp click-to-chat links contain the destination and are public to anyone who follows or inspects the link; this configuration does not make the number secret. Enquiries open as drafts for the customer to review and send. Opening WhatsApp does not place or confirm an order.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Development
 
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+Install dependencies with `npm install`, then run `npm run dev`. Use `npm run build` to create the production bundle and `npm run lint` to run Oxlint.

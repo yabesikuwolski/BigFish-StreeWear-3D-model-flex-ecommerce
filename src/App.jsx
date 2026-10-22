@@ -2,6 +2,13 @@ import { useEffect, useRef, useState } from 'react'
 import './App.css'
 import { categories, categoryPath, money, pathForProduct, products } from './data/products.js'
 
+const whatsappNumber = (import.meta.env.VITE_WHATSAPP_NUMBER || '').replace(/\D/g, '')
+
+function whatsappUrl(message) {
+  if (!whatsappNumber) return ''
+  return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`
+}
+
 function resolvePath(path) {
   if (path === '/') return { page: 'home' }
   if (path === '/shop') return { page: 'shop-index' }
@@ -17,6 +24,7 @@ function resolvePath(path) {
 function App() {
   const [route, setRoute] = useState(() => resolvePath(window.location.pathname))
   const [customer, setCustomer] = useState({ name: '', location: '' })
+  const [whatsappFeedback, setWhatsappFeedback] = useState('')
 
   useEffect(() => {
     const handlePopState = () => {
@@ -40,8 +48,19 @@ function App() {
       details.name && `Name: ${details.name}`,
       details.location && `Location: ${details.location}`,
     ].filter(Boolean)
-    const message = `Hello BIGFISH, I would like to order:\n\n${fields.join('\n')}`
-    window.open(`https://wa.me/255673810977?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer')
+    const message = `Hello BIGFISH, I would like to enquire about:\n\n${fields.join('\n')}`
+    const url = whatsappUrl(message)
+    if (!url) {
+      setWhatsappFeedback('WhatsApp enquiries are not configured yet. Please email us from the Contact page.')
+      return
+    }
+    const popup = window.open('about:blank', '_blank')
+    if (popup) {
+      popup.opener = null
+      popup.location = url
+      setWhatsappFeedback('WhatsApp opened with your product enquiry. Review the message and send it there; this has not placed an order.')
+    }
+    else setWhatsappFeedback('Your browser blocked the WhatsApp window. Allow pop-ups and try again.')
   }
 
   return <div className="site-shell">
@@ -60,7 +79,7 @@ function App() {
       {route.page === 'shop-index' && <CategoryDirectory onNavigate={navigate} />}
       {route.page === 'shop-all' && <Catalog onNavigate={navigate} />}
       {route.page === 'category' && <Catalog category={route.category} onNavigate={navigate} />}
-      {route.page === 'product' && <Product key={route.product.id} product={route.product} onBack={() => navigate(categoryPath(route.product.category))} onOrder={order} customer={customer} setCustomer={setCustomer} />}
+      {route.page === 'product' && <Product key={route.product.id} product={route.product} onBack={() => navigate(categoryPath(route.product.category))} onOrder={order} customer={customer} setCustomer={setCustomer} whatsappFeedback={whatsappFeedback} />}
       {route.page === 'about' && <About />}
       {route.page === 'contact' && <Contact />}
       {route.page === 'not-found' && <section className="page-pad"><p className="eyebrow">PAGE NOT FOUND</p><h1>LET’S FIND<br/><em>YOUR PIECE.</em></h1><button className="text-link" onClick={() => navigate('/shop')}>BROWSE THE SHOP ↗</button></section>}
@@ -226,19 +245,23 @@ function ProductCard({ product, onNavigate }) {
   </article>
 }
 
-function Product({ product, onBack, onOrder, customer, setCustomer }) {
+function Product({ product, onBack, onOrder, customer, setCustomer, whatsappFeedback }) {
   return <section className="product-page"><button className="back-link" onClick={onBack}>← BACK TO {categories[product.category].label.toUpperCase()}</button>
     <div className="product-layout"><div className="product-stage"><ProductViewer product={product} /><span className="stage-code">{product.code}</span></div>
       <div className="product-details"><p className="eyebrow">BIGFISH / {categories[product.category].label.toUpperCase()}</p><h1>{product.name}</h1><p className="product-type">{product.type}</p><p className="product-price">{money(product.price)}</p>
-        <div className="order-fields"><label className="field-label">YOUR NAME<input value={customer.name} onChange={(event) => setCustomer({ ...customer, name: event.target.value })} placeholder="Name (optional)" /></label><label className="field-label">LOCATION / CITY<input value={customer.location} onChange={(event) => setCustomer({ ...customer, location: event.target.value })} placeholder="Dar es Salaam (optional)" /></label><button className="order-button" onClick={() => onOrder(product, customer)}>ASK ABOUT THIS PRODUCT ON WHATSAPP <span>↗</span></button></div>
-        <p className="order-note">Opens WhatsApp with this product identified. Order details are confirmed with the BIGFISH team.</p>
+        <div className="order-fields"><label className="field-label">YOUR NAME<input value={customer.name} onChange={(event) => setCustomer({ ...customer, name: event.target.value })} placeholder="Name (optional)" /></label><label className="field-label">LOCATION / CITY<input value={customer.location} onChange={(event) => setCustomer({ ...customer, location: event.target.value })} placeholder="Dar es Salaam (optional)" /></label><button className="order-button" onClick={() => onOrder(product, customer)}>ENQUIRE ON WHATSAPP <span>↗</span></button></div>
+        <p className="order-note" aria-live="polite">{whatsappFeedback || 'WhatsApp opens with this product enquiry for you to review and send. No order is placed until details are confirmed with the BIGFISH team.'}</p>
       </div>
     </div>
   </section>
 }
 
 function About() { return <section className="about-page page-pad"><p className="eyebrow">ABOUT BIGFISH / 001</p><div className="about-grid"><h1>BUILT FOR<br/><em>THE ONES</em><br/>WHO KNOW.</h1><div className="about-copy"><p>BIGFISH is a Tanzanian streetwear label focused on high-quality limited drops. We make pieces with a point of view, released in small numbers and made to be worn hard.</p><p>Every order is personally handled through WhatsApp, with nationwide delivery across Tanzania.</p><p className="signature">-That's juc Leg!t-🚀</p></div></div><div className="about-rule"><span>FROM TANZANIA</span><span>FOR EVERYWHERE</span></div></section> }
-function Contact() { return <section className="contact-page page-pad"><p className="eyebrow">GET IN TOUCH</p><h1>LET'S<br/><em>TALK.</em></h1><div className="contact-links"><a href="https://instagram.com/ivyaudrey.vsop._" target="_blank" rel="noreferrer"><span>Instagram</span>@ivyaudrey.vsop._ <b>↗</b></a><a href="mailto:mimiaudrey22@gmail.com"><span>Email</span>mimiaudrey22@gmail.com <b>↗</b></a><a href="https://wa.me/255673810977" target="_blank" rel="noreferrer"><span>WhatsApp</span>+255 673 810 977 <b>↗</b></a></div></section> }
+function Contact() {
+  const message = 'Hello BIGFISH, I have a question about the collection.'
+  const url = whatsappUrl(message)
+  return <section className="contact-page page-pad"><p className="eyebrow">GET IN TOUCH</p><h1>LET'S<br/><em>TALK.</em></h1><div className="contact-links"><a href="https://instagram.com/ivyaudrey.vsop._" target="_blank" rel="noreferrer"><span>Instagram</span>@ivyaudrey.vsop._ <b>↗</b></a><a href="mailto:mimiaudrey22@gmail.com"><span>Email</span>mimiaudrey22@gmail.com <b>↗</b></a><a className="whatsapp-contact" href={url || undefined} target={url ? '_blank' : undefined} rel={url ? 'noreferrer' : undefined} onClick={(event) => { if (!url) event.preventDefault() }}><span>WhatsApp</span><strong>{url ? 'Enquire on WhatsApp' : 'WhatsApp enquiries unavailable'}</strong><b>↗</b></a>{!url && <p className="whatsapp-unavailable">WhatsApp contact is not configured. Please use email for now.</p>}</div></section>
+}
 function Footer({ onNavigate }) { return <footer><div className="footer-top"><button className="wordmark footer-mark" onClick={() => onNavigate('/')}>BIGFISH<span>®</span></button><p>-That's juc Leg!t-🚀</p><button className="footer-arrow" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} aria-label="Back to top">↑</button></div><div className="footer-bottom"><span>© BIGFISH 2024</span><button onClick={() => onNavigate('/contact')}>CONTACT</button><span>MADE IN TANZANIA</span></div></footer> }
 
 export default App
